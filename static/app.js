@@ -10,6 +10,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const errorMessage = document.getElementById('error-message');
     const retryBtn = document.getElementById('retry-btn');
 
+    // New Utility Buttons & Theme Toggle Elements
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    const sunIcon = document.getElementById('sun-icon');
+    const moonIcon = document.getElementById('moon-icon');
+    const exportCsvBtn = document.getElementById('export-csv-btn');
+
     // Share Modal Elements
     const shareModal = document.getElementById('share-modal');
     const tweetTextarea = document.getElementById('tweet-textarea');
@@ -116,15 +122,43 @@ document.addEventListener('DOMContentLoaded', () => {
                         <h2 class="note-title">${escapeHTML(note.title)}</h2>
                         <span class="note-date">${escapeHTML(formattedDate)}</span>
                     </div>
-                    <button class="btn btn-twitter small share-btn" data-id="${note.id}">
-                        <svg viewBox="0 0 24 24" fill="currentColor" class="x-icon">
-                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                        </svg>
-                        <span>Tweet</span>
-                    </button>
+                    <div class="note-actions">
+                        <button class="btn btn-secondary small copy-btn" data-id="${note.id}">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+                                <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                            </svg>
+                            <span>Copy</span>
+                        </button>
+                        <button class="btn btn-twitter small share-btn" data-id="${note.id}">
+                            <svg viewBox="0 0 24 24" fill="currentColor" class="x-icon">
+                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                            </svg>
+                            <span>Tweet</span>
+                        </button>
+                    </div>
                 </div>
                 <div class="note-content">${note.content}</div>
             `;
+
+            // Attach event listener to individual Copy button
+            const copyBtn = card.querySelector('.copy-btn');
+            copyBtn.addEventListener('click', async () => {
+                const textToCopy = `${note.title}\n\n${note.plain_text}\n\n${note.link}`;
+                try {
+                    await navigator.clipboard.writeText(textToCopy);
+                    const originalText = copyBtn.querySelector('span').textContent;
+                    copyBtn.querySelector('span').textContent = 'Copied!';
+                    copyBtn.classList.add('btn-success-temp');
+                    setTimeout(() => {
+                        copyBtn.querySelector('span').textContent = originalText;
+                        copyBtn.classList.remove('btn-success-temp');
+                    }, 1500);
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                    alert('Failed to copy to clipboard.');
+                }
+            });
 
             // Attach event listener to individual Tweet button
             const shareBtn = card.querySelector('.share-btn');
@@ -184,6 +218,71 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
     }
+
+    // Theme Toggle Logic
+    const currentTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    updateThemeIcons(currentTheme);
+
+    function updateThemeIcons(theme) {
+        if (theme === 'light') {
+            sunIcon.classList.remove('hidden');
+            moonIcon.classList.add('hidden');
+        } else {
+            sunIcon.classList.add('hidden');
+            moonIcon.classList.remove('hidden');
+        }
+    }
+
+    themeToggleBtn.addEventListener('click', () => {
+        const theme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+        updateThemeIcons(theme);
+    });
+
+    // Export to CSV Functionality
+    exportCsvBtn.addEventListener('click', () => {
+        if (currentNotes.length === 0) {
+            alert('No release notes available to export.');
+            return;
+        }
+
+        const csvRows = [];
+        // Add Header
+        csvRows.push(['ID', 'Title', 'Date', 'Link', 'Plain Text Content']);
+
+        // Helper to escape values for CSV
+        function escapeCsvValue(val) {
+            if (val === null || val === undefined) return '';
+            let formatted = val.toString().replace(/"/g, '""');
+            if (formatted.includes(',') || formatted.includes('\n') || formatted.includes('"')) {
+                formatted = `"${formatted}"`;
+            }
+            return formatted;
+        }
+
+        currentNotes.forEach(note => {
+            csvRows.push([
+                escapeCsvValue(note.id),
+                escapeCsvValue(note.title),
+                escapeCsvValue(note.updated),
+                escapeCsvValue(note.link),
+                escapeCsvValue(note.plain_text)
+            ]);
+        });
+
+        const csvContent = csvRows.map(row => row.join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'bigquery-release-notes.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
 
     // Event Listeners
     refreshBtn.addEventListener('click', fetchReleaseNotes);
