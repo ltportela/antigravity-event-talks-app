@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const sunIcon = document.getElementById('sun-icon');
     const moonIcon = document.getElementById('moon-icon');
     const exportCsvBtn = document.getElementById('export-csv-btn');
+    const searchInput = document.getElementById('search-input');
+    const toastContainer = document.getElementById('toast-container');
 
     // Share Modal Elements
     const shareModal = document.getElementById('share-modal');
@@ -39,14 +41,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.success) {
                 currentNotes = data.notes;
-                renderNotes(data.notes);
+                filterAndRenderNotes();
                 
                 // Update header info
                 const now = new Date();
                 updateTimestamp.textContent = `Last synced: ${now.toLocaleTimeString()}`;
-                noteCount.textContent = `${data.notes.length} updates`;
+                showToast('Release notes synced successfully!', 'success');
             } else {
                 showError(data.error || 'Failed to fetch release notes from server.');
+                showToast('Failed to fetch release notes.', 'error');
             }
         } catch (error) {
             showError('Network error. Is the Flask backend running?');
@@ -54,6 +57,51 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             setLoading(false);
         }
+    }
+
+    // Toast notification helper
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        
+        // Icon based on type
+        const iconHtml = type === 'success' 
+            ? `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px; vertical-align: middle;"><path d="M20 6 9 17l-5-5"/></svg>`
+            : `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px; vertical-align: middle;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`;
+            
+        toast.innerHTML = `${iconHtml}<span>${message}</span>`;
+        toastContainer.appendChild(toast);
+        
+        // Force layout reflow to trigger transition
+        toast.offsetHeight;
+        toast.classList.add('show');
+        
+        // Auto remove after 3s
+        setTimeout(() => {
+            toast.classList.remove('show');
+            toast.addEventListener('transitionend', () => {
+                toast.remove();
+            });
+        }, 3000);
+    }
+
+    // Filter notes based on search query and render
+    function filterAndRenderNotes() {
+        const query = searchInput.value.toLowerCase().trim();
+        
+        if (!query) {
+            renderNotes(currentNotes);
+            noteCount.textContent = `${currentNotes.length} updates`;
+            return;
+        }
+        
+        const filtered = currentNotes.filter(note => {
+            return note.title.toLowerCase().includes(query) || 
+                   note.plain_text.toLowerCase().includes(query);
+        });
+        
+        renderNotes(filtered);
+        noteCount.textContent = `${filtered.length} found of ${currentNotes.length}`;
     }
 
     // Toggle loading states / spinner
@@ -147,6 +195,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const textToCopy = `${note.title}\n\n${note.plain_text}\n\n${note.link}`;
                 try {
                     await navigator.clipboard.writeText(textToCopy);
+                    showToast('Copied to clipboard!', 'success');
+                    
                     const originalText = copyBtn.querySelector('span').textContent;
                     copyBtn.querySelector('span').textContent = 'Copied!';
                     copyBtn.classList.add('btn-success-temp');
@@ -156,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }, 1500);
                 } catch (err) {
                     console.error('Failed to copy text: ', err);
-                    alert('Failed to copy to clipboard.');
+                    showToast('Failed to copy to clipboard.', 'error');
                 }
             });
 
@@ -241,10 +291,13 @@ document.addEventListener('DOMContentLoaded', () => {
         updateThemeIcons(theme);
     });
 
+    // Search input event listener
+    searchInput.addEventListener('input', filterAndRenderNotes);
+
     // Export to CSV Functionality
     exportCsvBtn.addEventListener('click', () => {
         if (currentNotes.length === 0) {
-            alert('No release notes available to export.');
+            showToast('No release notes available to export.', 'error');
             return;
         }
 
@@ -282,6 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        showToast('CSV exported successfully!', 'success');
     });
 
     // Event Listeners
