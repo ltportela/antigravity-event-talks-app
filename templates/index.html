@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigQuery Release Notes Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar / Header Area -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="bq-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM9 17H7V10H9V17ZM13 17H11V7H13V17ZM17 17H15V13H17V17Z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1>BigQuery Updates</h1>
+                    <p class="subtitle">Official Release Notes</p>
+                </div>
+            </div>
+            
+            <div class="actions-area">
+                <button id="refresh-btn" class="btn btn-primary" title="Refresh Release Notes">
+                    <svg id="refresh-icon" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                    </svg>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="app-main">
+            <!-- Feed Details & Status -->
+            <div class="feed-status-bar">
+                <span id="update-timestamp" class="timestamp-badge">Not loaded yet</span>
+                <span id="note-count" class="count-badge">0 updates</span>
+            </div>
+
+            <!-- Notes Grid / List -->
+            <div id="notes-container" class="notes-grid">
+                <!-- Loading State / Spinner -->
+                <div id="loading-state" class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Fetching latest release notes from Google Cloud...</p>
+                </div>
+                
+                <!-- Error State -->
+                <div id="error-state" class="error-state hidden">
+                    <div class="error-icon">⚠️</div>
+                    <h3>Failed to load release notes</h3>
+                    <p id="error-message">Unknown error occurred.</p>
+                    <button id="retry-btn" class="btn btn-secondary">Try Again</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Twitter/X Share Modal -->
+    <div id="share-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Share to Twitter / X</h2>
+                <button id="close-modal-btn" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="tweet-preview-container">
+                    <textarea id="tweet-textarea" rows="6" maxlength="280"></textarea>
+                    <div class="char-counter">
+                        <span id="char-count">0</span>/280
+                    </div>
+                </div>
+                <div class="helper-info">
+                    <p>Customize your tweet above. Clicking "Tweet" will open standard X/Twitter web share dialog prefilled with this text.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-share-btn" class="btn btn-secondary">Cancel</button>
+                <button id="confirm-share-btn" class="btn btn-twitter">
+                    <svg viewBox="0 0 24 24" fill="currentColor" class="x-icon">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    <span>Tweet</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
